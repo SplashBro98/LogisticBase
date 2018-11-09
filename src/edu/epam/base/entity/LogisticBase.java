@@ -1,6 +1,5 @@
 package edu.epam.base.entity;
 
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Semaphore;
@@ -36,20 +35,15 @@ public class LogisticBase {
             Terminal current = terminals.poll();
             return current;
         } catch (InterruptedException e) {
-            e.printStackTrace();
+           Thread.currentThread().interrupt();
         }
         return null;
     }
 
     public void leaveTerminal(Terminal terminal) {
         terminals.offer(terminal);
-        this.counter.set(counter.get() + 1);
-        //System.out.println("Counter = " + counter + "\n");
         semaphore.release();
-    }
-
-    public AtomicInteger getCounter() {
-        return counter;
+        this.counter.set(counter.get() + 1);
     }
 
 

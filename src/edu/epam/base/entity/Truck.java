@@ -7,17 +7,16 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Truck implements Callable<String> {
+    private static Logger logger = LogManager.getLogger(Truck.class);
 
     private long truckId;
     private String product;
     private boolean perishable;
     private Driver driver;
-    private AtomicBoolean state;
-    private Terminal terminal;
-    private static Logger logger = LogManager.getLogger();
+    private AtomicReference<Terminal> terminal;
 
 
     public Truck(String product, Driver driver, boolean perishable) {
@@ -25,23 +24,16 @@ public class Truck implements Callable<String> {
         this.driver = driver;
         this.perishable = perishable;
         this.truckId = IdGenerator.getTruckCounter();
-        this.state = new AtomicBoolean(false);
-        this.terminal = null;
+        this.terminal = new AtomicReference<>(null);
     }
 
-    public AtomicBoolean getState() {
-        return state;
-    }
 
-    public void setState(AtomicBoolean state) {
-        this.state = state;
-    }
 
     public Terminal getTerminal() {
-        return terminal;
+        return terminal.get();
     }
 
-    public void setTerminal(Terminal terminal) {
+    public void setTerminal(AtomicReference<Terminal> terminal) {
         this.terminal = terminal;
     }
 
@@ -50,26 +42,29 @@ public class Truck implements Callable<String> {
         try {
             WaitingPlatform.getInstance().addTruck(this);
             while (true) {
-                if (state.get() && terminal != null) {
-                    logger.log(Level.INFO, this.toString() + "попал на терминал № " + terminal.getTerminalId() + "\n");
-                    this.registate(terminal);
-                    logger.log(Level.INFO, this.toString() + "покинул терминал № " + terminal.getTerminalId() + "\n");
+                if (terminal.get() != null) {
+                    logger.log(Level.INFO, this.toString() + "попал на терминал № " + terminal.get().getTerminalId() + "\n");
+                    this.register(terminal.get());
+                    logger.log(Level.INFO, this.toString() + "покинул терминал № " + terminal.get().getTerminalId() + "\n");
+                    LogisticBase.getInstance().leaveTerminal(terminal.get());
                     break;
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.ERROR, "Error with " + this.toString());
+            Thread.currentThread().interrupt();
         }
         return this.toString();
     }
 
-    public void registate(Terminal terminal) {
+    public void register(Terminal terminal) {
         logger.log(Level.INFO, this.toString() + "проходит проверку на терминале № " + terminal.getTerminalId() + "\n");
         try {
-            TimeUnit.SECONDS.sleep(5);
-            LogisticBase.getInstance().leaveTerminal(terminal);
+            //имитация регистрации
+            TimeUnit.SECONDS.sleep(6);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.log(Level.ERROR, this.toString() + "can`t register" + e);
+            Thread.currentThread().interrupt();
         }
     }
 

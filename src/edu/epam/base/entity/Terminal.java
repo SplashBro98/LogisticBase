@@ -10,8 +10,6 @@ public class Terminal {
         this.terminalId = IdGenerator.getTerminalCounter();
     }
 
-
-
     public long getTerminalId() {
         return terminalId;
     }
